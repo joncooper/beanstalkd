@@ -1,0 +1,55 @@
+main.c: 
+main():
+    net.c:
+    make_server_socket(host_addr, port):
+      sd-daemon.c:
+      sd_listen_fds():
+        /* See if we got a listen fd from systemd. If so, all socket options etc
+         * are already set, so we check that the fd is a TCP listen socket and
+         * return. */
+      if there is no fd inherited from systemd, make a nonblocking socket, bind to it, and return its fd
+    prot.c:
+    prot_init:
+      set up queue internals
+    main.c:
+    set_sig_handlers:
+      handle signals (mostly by shutting down :))
+    daemonize (optionally)
+      do security stuff, fork, etc
+    srv(&s) (Srv s)
+      sock-bsd.c:
+      sockinit((Handle) srvtick, Srv &s, 10ms)
+        initialize kqueue
+      listen on the now kqueue'd socket
+      sock-bsd.c
+      sockwant()
+        tell kqueue we want rw events for this kqueue'd socket
+      sockmain()
+        spin continuously (for (;;)) awaiting events from kqueue
+        if the tick interval has elapsed (default 10ms)
+        srvtick():
+          prottick():
+            manage connection timeouts
+            manage memory
+            manage timeouts
+        if we got inbound events from kqueue():
+          sock-bsd.c:
+          handle() with event data & filter:
+            socket->f(which is srvaccept)(socket->x)
+            socket->x is initially the Srv instance
+              srv.c:
+              srvaccept():
+                prot.c:
+                h_accept():
+                  accept() the connection
+                  set its fd to nonblocking
+                  set its conn->f to prothandle
+                  register for read events with kqueue on that conn
+                  add connection to connection table
+                  
+                  
+                  
+- Use SASL but do not allow negotiation to contain a security layer; we do not support transport layer security
+  - This allows the connection to be handed off and resources to be freed on the dispatcher.
+  
+  
