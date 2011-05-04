@@ -1,3 +1,5 @@
+#include <sasl/sasl.h>
+
 typedef unsigned char uchar;
 typedef uchar         byte;
 typedef unsigned int  uint;
@@ -44,6 +46,7 @@ struct Socket {
 struct Connection {
   Connection prev, next;
   Socket socket;
+  sasl_conn_t *sasl_conn;
   char state; // in terms of our protocols' state machine
   int rw;
   
@@ -88,12 +91,10 @@ void warnx(const char *fmt, ...);
 
 int64 nanoseconds();
 
-#include <sasl/sasl.h>
 void sasl_init();
 sasl_conn_t* sasl_conn_new();
 const char *sasl_available_mechanisms(sasl_conn_t *sasl_context);
-sasl_auth_start(sasl_conn_t *conn, const char *mechanism, const char *clientin)
-  sasl_auth_step(sasl_conn_t *conn, const char *clientin)
-
+void sasl_auth_start(sasl_conn_t *conn, const char *mechanism, const char *clientin, unsigned int clientinlen, const char *serverout, unsigned int serveroutlen);
+void sasl_auth_step(sasl_conn_t *conn, const char *clientin, unsigned int clientinlen, const char *serverout, unsigned int serveroutlen);
 void sasl_conn_free();
 
