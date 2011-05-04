@@ -61,6 +61,8 @@ struct Server {
   Connection connections;
 };
 
+extern const char *progname;
+
 Connection make_conn(int fd, char start_state);
 void conn_close(Connection c);
 
@@ -85,3 +87,13 @@ void warn(const char *fmt, ...);
 void warnx(const char *fmt, ...);
 
 int64 nanoseconds();
+
+#include <sasl/sasl.h>
+void sasl_init();
+sasl_conn_t* sasl_conn_new();
+const char *sasl_available_mechanisms(sasl_conn_t *sasl_context);
+sasl_auth_start(sasl_conn_t *conn, const char *mechanism, const char *clientin)
+  sasl_auth_step(sasl_conn_t *conn, const char *clientin)
+
+void sasl_conn_free();
+

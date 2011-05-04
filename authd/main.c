@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sasl/sasl.h>
 #include "ds.h"
 
 static char *host_addr = "localhost";
@@ -41,6 +42,14 @@ main(int argc, char** argv)
 {
   int r;
   Server s = {};
+  
+  progname = argv[0];
+  
+  sasl_init();
+  sasl_conn_t *sasl_context = sasl_conn_new();
+  const char *available_mechanisms = sasl_available_mechanisms(sasl_context);
+  
+  dbgprintf("sasl_available_mechanisms:\n%s\n", available_mechanisms);
   
   r = make_server_socket(host_addr, port);
   if (r == -1) twarnx("make_server_socket()"), exit(111);
