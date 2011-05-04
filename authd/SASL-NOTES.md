@@ -3,6 +3,9 @@
 
 [SASL Application Programmer's Guide](http://www.cyrusimap.org/docs/cyrus-sasl/2.1.23/programming.php)
 Oracle [Introduction to SASL](http://download.oracle.com/docs/cd/E19963-01/html/819-2145/sasl.intro.20.html)
+memcached SASL support [commit](https://github.com/memcached/memcached/commit/f1307c4d9cadb94076a99cc2f88a00f7e0b4161f)
+memcached [SASL Auth Protocol](http://code.google.com/p/memcached/wiki/SASLAuthProtocol)
+libmemcached SASL support [commit](http://bazaar.launchpad.net/~trond-norbye/libmemcached/sasl/revision/802#libmemcached/sasl.c)
 
 ## Notes
 
@@ -15,8 +18,6 @@ Oracle [Introduction to SASL](http://download.oracle.com/docs/cd/E19963-01/html/
 - The protocol defines how the binary tokens are encoded for transfer over its connection.
 
 
-// See http://www.cyrusimap.org/docs/cyrus-sasl/2.1.23/programming.php
-
 // Lifecycle:
 //   first, call sasl_server_init
 //   then, on each new connection, call sasl_server_new at accept() time
@@ -27,3 +28,31 @@ Oracle [Introduction to SASL](http://download.oracle.com/docs/cd/E19963-01/html/
 //         anything else means an error.
 //   when the connection is concluded, make a call to sasl_dispose
 //   finish by calling sasl_done (on global shutdown)
+
+## Protocol Definitions
+
+Limits:
+
+MAX_SASL_MECH_LEN 32
+_
+Requests:
+
+CMD_AUTH_LIST_MECHANISMS - request a list of supported auth mechanisms
+   auth-list-mechanisms\r\n
+CMD_AUTH_START - begin an authentication request
+   auth-start <mechanism> <bytes>\r\n
+   <auth data>\r\n
+CMD_AUTH_STEP - respond to a MSG_AUTH_CONTINUE
+   auth-step <bytes>\r\n
+   <auth data>\r\n
+  
+<bytes> excludes \r\n and refers to the size of the <auth data> payload
+
+Responses:
+
+MSG_AUTH_OK
+MSG_AUTH_UNAUTHORIZED - an authentication or authorization failure occurred.
+MSG_AUTH_CONTINUE - another authorization step is required
+MSG_UNKNOWN_COMMAND - server doesn't know what you're talking about and is probably a beanstalkd
+
+reply_msg seems to be not resetting input buffers correctly_

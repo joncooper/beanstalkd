@@ -21,9 +21,11 @@ static const char *service_name = "beanstalk";
 //   when the connection is concluded, make a call to sasl_dispose
 //   finish by calling sasl_done (on global shutdown)
 
+// See SASL commits to memcached:
+//   https://github.com/memcached/memcached/commit/f1307c4d9cadb94076a99cc2f88a00f7e0b4161f
 
 static sasl_callback_t callbacks[] = {
-  // see sasl.h for examples
+  { SASL_CB_LIST_END, NULL, NULL }
 };
 
 void
@@ -61,16 +63,16 @@ sasl_available_mechanisms(sasl_conn_t *conn)
 {
   int r;
   const char *result_string;
-  unsigned string_length;
+  unsigned int string_length;
   int number_of_mechanisms;
   
   r = sasl_listmech(conn,                   // SASL contxt
                     NULL,                   // not supported
-                    "{", ", ", "}",         // format the output
+                    "", " ", "",            // format the output
                     &result_string,         // list of mechanisms as string
                     &string_length,         // etc..
                     &number_of_mechanisms);
-                    
+  
   if (r == -1) {
     twarn("sasl_listmech");
     exit(1);
@@ -83,22 +85,20 @@ sasl_available_mechanisms(sasl_conn_t *conn)
 // TODO: similarly they should not use sizeof() as the input might not be NULL-terminated either.
 
 void
-sasl_auth_start(sasl_conn_t *conn, const char *mechanism, const char *clientin)
+sasl_auth_start(sasl_conn_t *conn, const char *mechanism, const char *clientin, unsigned int clientinlen, const char *serverout, unsigned int serveroutlen)
 {
   int r;
-  const char *out;
-  unsigned outlen;
   
   r = sasl_server_start(conn,
                         mechanism,
                         clientin,
                         sizeof(clientin),
-                        &out,         // library output; may not be NULL-terminated
-                        &outlen);
+                        &serverout,         // library output; may not be NULL-terminated
+                        &serveroutlen);
   
   if ((r != SASL_OK) && (r != SASL_CONTINUE)) {
     // failure. send protocol specific message saying authentication failed.
-  } else if (result == SASL_OK) {
+  } else if (r == SASL_OK) {
     // authentication succeeded. send client the protocol specific message saying that authentication is complete.
   } else {
     // should be SASL_CONTINUE
@@ -107,21 +107,19 @@ sasl_auth_start(sasl_conn_t *conn, const char *mechanism, const char *clientin)
 }
 
 void
-sasl_auth_step(sasl_conn_t *conn, const char *clientin)
+sasl_auth_step(sasl_conn_t *conn, const char *clientin, unsigned int clientinlen, const char *serverout, unsigned int serveroutlen)
 {
   int r;
-  const char *out;
-  unsigned outlen;
   
   r = sasl_server_step(conn,
                        clientin,
                        sizeof(clientin),
-                       &out,         // library output; may not be NULL-terminated
-                       &outlen);
+                       &serverout,         // library output; may not be NULL-terminated
+                       &serveroutlen);
   
   if ((r != SASL_OK) && (r != SASL_CONTINUE)) {
     // failure. send protocol specific message saying authentication failed.
-  } else if (result == SASL_OK) {
+  } else if (r == SASL_OK) {
     // authentication succeeded. send client the protocol specific message saying that authentication is complete.
   } else {
     // should be SASL_CONTINUE
