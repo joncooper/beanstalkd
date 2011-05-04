@@ -4,3 +4,5 @@ ct/_*
 beanstalkd
 beanstalkd-*.tar.gz
 NEWS.md
+authd/authd
+authd/*.o
