@@ -46,7 +46,6 @@ struct Socket {
 struct Connection {
   Connection prev, next;
   Socket socket;
-  sasl_conn_t *sasl_conn;
   char state; // in terms of our protocols' state machine
   int rw;
   
@@ -57,6 +56,16 @@ struct Connection {
   int reply_len;
   int reply_sent;
   char reply_buf[LINE_BUF_SIZE]; // this IS NULL-terminated
+  
+  sasl_conn_t *sasl_conn;
+  
+  char *auth_data_in;
+  int auth_data_in_len;
+  int auth_data_in_read;
+  
+  char *auth_data_out_lenut;
+  int auth_data_out_len;
+  int auth_data_out_sent;
 };
 
 struct Server {

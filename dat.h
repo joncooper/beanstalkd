@@ -220,7 +220,7 @@ char* fmtalloc(char *fmt, ...);
 void* zalloc(int n);
 #define new(T) zalloc(sizeof(T))
 
-extern const char *progname;
+extern const chars *progname;
 
 int64 nanoseconds(void);
 int   falloc(int fd, int len);

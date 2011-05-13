@@ -35,27 +35,12 @@ sasl_init()
   r = sasl_server_init(callbacks, progname);
 }
 
-sasl_conn_t* 
-sasl_conn_new()
-{
-  int r;
-  sasl_conn_t *conn;
-  
-  // Make a new SASL context
-  r = sasl_server_new(service_name,
-                      NULL,         // FQDN; NULL means use gethostname()
-                      NULL,         // user realm used for password lookups
-                      NULL, NULL,   // IP address information strings
-                      NULL,         // callbacks supported only for this conn
-                      0,            // security flags
-                      &conn);
 
-  if (r == -1) {
-    twarn("sasl_server_new");
-    exit(1);
-  }
   
   return conn;
+sasl_conn_new()
+{
+  
 }
 
 const char *

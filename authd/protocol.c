@@ -10,8 +10,11 @@
 #define MSG_AUTH_OK "AUTH_OK\r\n"
 #define MSG_AUTH_UNAUTHORIZED "AUTH_UNAUTHORIZED\r\n"
 #define MSG_AUTH_CONTINUE "AUTH_CONTINUE\r\n"
+#define MSG_AUTH_DATA_TOO_BIG "AUTH_DATA_TOO_BIG\r\n"
+
 #define MSG_UNKNOWN_COMMAND "UNKNOWN_COMMAND\r\n"
 #define MSG_INTERNAL_ERROR "INTERNAL_ERROR\r\n"
+#define MSG_OUT_OF_MEMORY "OUT_OF_MEMORY\r\n"
 #define MSG_BAD_FORMAT "BAD_FORMAT\r\n"
 
 #define STATE_WANTCOMMAND 0
@@ -27,6 +30,8 @@
 
 #define MECHANISM_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZ" \
                         "0123456789-_"
+                        
+#define AUTH_DATA_SIZE_LIMIT 10000 // completely arbitrary
 
 #ifdef DEBUG
 static const char * op_names[] = {
@@ -195,6 +200,33 @@ read_mechanism(char **mechanism, char *buf, char **end)
   return 0;
 }
 
+static void
+maybe_perform_auth_step(Connection c)
+{
+  /* have we gotten all the auth data we expected? */
+  
+}
+
+static void
+_skip(conn c, int n, const char *line, int len)
+{
+    /* Invert the meaning of in_job_read while throwing away data -- it
+     * counts the bytes that remain to be thrown away. */
+    c->in_job = 0;
+    c->in_job_read = n;
+    fill_extra_data(c);
+
+    if (c->in_job_read == 0) return reply(c, line, len, STATE_SENDWORD);
+
+    c->reply = line;
+    c->reply_len = len;
+    c->reply_sent = 0;
+    c->state = STATE_BITBUCKET;
+    return;
+}
+
+#define skip(c,n,m) (_skip(c,n,m,CONSTSTRLEN(m)))
+
 static void 
 dispatch_cmd(Connection c)
 {
@@ -231,15 +263,32 @@ dispatch_cmd(Connection c)
     if (r) return reply_msg(c, MSG_BAD_FORMAT);
     dbgprintf("OP_AUTH_START: mechanism %s\n", mechanism);
     
-    // *size_buf now points to the location of the <bytes> parameter
+    // size_buf now points to the location of the <bytes> parameter
     r = read_uint_param(&data_size, size_buf, &end_buf);
     if (r) return reply_msg(c, MSG_BAD_FORMAT);
     
-    // *end_buf now points to the null terminator
-    if (end_buf[0] != '\0') {
-      dbgprintf("dispatch_cmd: bad *end_buf.");
-      return reply_msg(c, MSG_BAD_FORMAT);
+    if (data_size > AUTH_DATA_SIZE_LIMIT) {
+      /* throw away the job body and respond with JOB_TOO_BIG */
+      return skip(c, data_size + 2, MSG_AUTH_DATA_TOO_BIG);
     }
+    
+    /* don't allow trailing garbage */
+    if (end_buf[0] != '\0') return reply_msg(c, MSG_BAD_FORMAT);
+    
+    /* allocate space for the incoming auth data */
+    c->auth_data_in = malloc(data_size);
+    if (!c->auth_data_in) {
+      /* throw away the auth data and respond with OUT_OF_MEMORY */
+      twarnx("server error: " MSG_OUT_OF_MEMORY);
+      return skip(c, data_size + 2, MSG_OUT_OF_MEMORY);
+    }
+    c->auth_data_in_len = data_size;
+    
+    fill_extra_data(c);
+    
+    /* it's possible we have already received all the bytes we're looking for */
+    maybe_perform_auth_step(c)
+    
     break;
   case OP_AUTH_STEP:
     break;
@@ -249,10 +298,12 @@ dispatch_cmd(Connection c)
   }
 }
 
+/* Copy up to auth_data_in_len bytes into the auth_data, and return an
+ * error if we got too much data. */
 static void
 fill_extra_data(Connection c)
 {
-  int extra_bytes;
+  int extra_bytes, auth_data_bytes = 0, cmd_bytes;
   
   if (!c->socket.fd) return; /* the connection was closed */
   if (!c->cmd_len) return; /* we don't have a complete command */
@@ -260,9 +311,21 @@ fill_extra_data(Connection c)
   /* how many extra bytes did we read? */
   extra_bytes = c->cmd_read - c->cmd_len;
   
-  /* see prot.c - copy data somewhere the SASL auth can find it */
+  /* how many bytes should we put into the auth_data_in? */
+  if (c->auth_data_in) {
+    auth_data_bytes = min(extra_bytes, c->auth_data_in_len);
+    memcpy(c->auth_data_in, c->cmd + c->cmd_len, auth_data_bytes);
+    c->auth_data_in_read = auth_data_bytes;
+  } else if (c->auth_data_in_read) {
+    /* we are in bit-bucket mode, throwing away data */
+    auth_data_bytes = min(extra_bytes, c->auth_data_in_read);
+    c->auth_data_in_read -= auth_data_bytes;
+  }
   
-  c->cmd_read = 0;
+  /* how many bytes are left to go into the future cmd? */
+  cmd_bytes = extra_bytes - auth_data_bytes;
+  memmove(c->cmd, c->cmd + c->cmd_len + auth_data_bytes, cmd_bytes);
+  c->cmd_read = cmd_bytes;
   c->cmd_len = 0;
 }
 
