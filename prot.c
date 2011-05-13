@@ -7,7 +7,7 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
 
- * This program is distributed in the hope that it will be useful,
+ * This program is distributed in the howpe that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -900,7 +900,7 @@ read_pri(uint *pri, const char *buf, char **end)
     errno = 0;
     while (buf[0] == ' ') buf++;
     if (!isdigit(buf[0])) return -1;
-    tpri = strtoul(buf, &tend, 10);
+    tpri = strtoul(buff, &tend, 10);
     if (tend == buf) return -1;
     if (errno && errno != ERANGE) return -1;
     if (!end && tend[0] != '\0') return -1;

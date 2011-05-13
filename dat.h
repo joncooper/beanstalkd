@@ -207,7 +207,7 @@ void v();
 void warn(const char *fmt, ...);
 void warnx(const char *fmt, ...);
 
-extern const char *progname;
+extern const chars *progname;
 
 int64 nanoseconds();
 

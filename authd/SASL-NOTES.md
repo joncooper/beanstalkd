@@ -6,6 +6,7 @@ Oracle [Introduction to SASL](http://download.oracle.com/docs/cd/E19963-01/html/
 memcached SASL support [commit](https://github.com/memcached/memcached/commit/f1307c4d9cadb94076a99cc2f88a00f7e0b4161f)
 memcached [SASL Auth Protocol](http://code.google.com/p/memcached/wiki/SASLAuthProtocol)
 libmemcached SASL support [commit](http://bazaar.launchpad.net/~trond-norbye/libmemcached/sasl/revision/802#libmemcached/sasl.c)
+[Surviving Cyrus SASL](http://postfix.state-of-mind.de/patrick.koetter/surviving_cyrus_sasl.pdf) (PDF)
 
 ## Notes
 
