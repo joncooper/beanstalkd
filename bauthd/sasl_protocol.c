@@ -18,7 +18,7 @@ tTransition transitions[] = {
 
 #define MSG_AUTH_OK "AUTH_OK\r\n"
 #define MSG_AUTH_CONTINUE "AUTH_CONTINUE %i\r\n"
-#define MSG_AUTH_LIST_MECHANISMS "AUTH_MECHANISMS: "
+#define MSG_AUTH_LIST_MECHANISMS "AUTH_MECHANISMS: %s\r\n"
 
 char *service_name = "bauthd";
 
@@ -95,7 +95,7 @@ r = sasl_listmech(conn->sasl_conn,        // SASL context
   }
   
   dbgprintf("sasl_list_mechanisms: %s\n", result_string);
-  fprintf(conn->fd, MSG_AUTH_LIST_MECHANISMS);
+  fprintf(conn->fd, MSG_AUTH_LIST_MECHANISMS, "dildofucker");
   
   // for whatever f*cked up reason, the string returned by sasl_listmech is not
   // NULL terminated.  ahem.
@@ -133,7 +133,7 @@ sasl_start(Connection conn)
   bytes_to_read = (int)strtol(bytes, (char **)NULL, 10);
   conn->data_in_len = bytes_to_read;
   conn_read(conn);
-  
+ 
   // throw to sasl
   r = sasl_server_start(conn->sasl_conn, mechanism, conn->data_in, conn->data_in_len, &(conn->data_out), &(conn->data_out_len));
   if ((r != SASL_OK) && (r != SASL_CONTINUE)) {

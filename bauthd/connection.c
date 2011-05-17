@@ -14,8 +14,8 @@ Connection conn_init()
   conn->sasl_conn = sasl_conn_new();
   conn->state = ST_SASL_READY;
 
-  conn->data_in = calloc(MAX_DATA_SIZE, sizeof(char *));
-  conn->data_out = calloc(MAX_DATA_SIZE, sizeof(char *));
+  conn->data_in = calloc(MAX_DATA_SIZE, sizeof(char));
+  conn->data_out = calloc(MAX_DATA_SIZE, sizeof(char));
 
   return conn;
 }
@@ -78,7 +78,9 @@ conn_read(Connection conn)
 int
 conn_read_command(Connection conn)
 {
-  int r, line_read, line_end;
+  int r;
+  int line_read = 0;
+  int line_end = 0;
   do {
     r = fdread(conn->fd, conn->command, LINE_BUF_SIZE - line_read);
     if (r == 0) {
