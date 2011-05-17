@@ -17,7 +17,7 @@
 
 #define CONSTSTRLEN(m) (sizeof(m) - 1)
 
-char *address = "localhost";
+char *address = "surgingurgency.com";
 int port = 11301;
 
 char remote[16];
