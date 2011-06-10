@@ -17,6 +17,7 @@
 
 #define CONSTSTRLEN(m) (sizeof(m) - 1)
 
+// TODO: do something smart with the bind address
 char *address = "localhost";
 int port = 11301;
 
@@ -97,6 +98,7 @@ taskmain(int argc, char **argv)
 
   fd = netannounce(TCP, address, port);
   if (fd < 0) {
+//TODO: tighten error message
     printf("aieeee!\n");
     taskexitall(1);
   }

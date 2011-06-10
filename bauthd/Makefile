@@ -1,5 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -ggdb -Ilibtask -Llibtask
+# TODO: only need libpthread for debugging; how do I handle this?
 LDFLAGS=-lsasl2 -lpthread
 LDLIBS=libtask/libtask.a
 
@@ -38,7 +39,7 @@ $(TARG): $(OFILES) $(MOFILE)
 
 .PHONY: clean
 clean:
-	rm -f *.o $(TARG) ct/_* ct/*.o
+	rm -f *.o $(TARG)
 
 #$(TARG): $(OFILES) $(MOFILE)
 #	$(LINK.o) -o $@ $^ $(LDLIBS)
