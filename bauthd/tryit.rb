@@ -12,7 +12,7 @@ require 'sasl/plain'
 
 class SASLPreferences < SASL::Preferences
   def authzid
-    'dildo'
+    'testuser'
   end
   def realm
     'bauthd'
@@ -21,10 +21,10 @@ class SASLPreferences < SASL::Preferences
     'bauthd/surgingurgency.com'
   end
   def username
-    'dildo'
+    'testuser'
   end
   def password
-    'dildo'
+    'wrong'
   end
   def has_password?
     true
@@ -42,6 +42,8 @@ preferences = SASLPreferences.new
 
 sasl = SASL.new(mechanisms, preferences)
 content_to_send = sasl.start
+
+puts "content_to_send:\n#{content_to_send}\n"
 
 s = TCPSocket.open('localhost', 11301)
 s.print("auth-start PLAIN #{content_to_send[1].size}\r\n")

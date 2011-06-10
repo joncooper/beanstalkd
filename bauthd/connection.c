@@ -15,7 +15,12 @@ Connection conn_init()
   conn->state = ST_SASL_READY;
 
   conn->data_in = calloc(MAX_DATA_SIZE, sizeof(char));
+  conn->data_in_len = 0;
+  conn->data_in_loc = 0;
+
   conn->data_out = calloc(MAX_DATA_SIZE, sizeof(char));
+  conn->data_out_len = 0;
+  conn->data_out_len = 0;
 
   return conn;
 }
@@ -23,6 +28,7 @@ Connection conn_init()
 void
   conn_close(Connection conn)
 {
+  free(conn->command);
   free(conn->data_in);
   free(conn->data_out);
   sasl_conn_free(conn->sasl_conn);
@@ -107,8 +113,9 @@ conn_read_command(Connection conn)
   assert(strlen(conn->command) == (line_end - 2));
   
   // copy any trailing bytes into the data buffer
-  memcpy(conn->data_in, conn->command + line_end, LINE_BUF_SIZE - line_end);
-  conn->data_in_loc = LINE_BUF_SIZE - line_end;
+  memcpy(conn->data_in, &(conn->command[line_end]), line_read - line_end);
+  conn->data_in_loc = line_read - line_end;
+  conn->data_in_len = line_read - line_end;
   
   return 1;
 }

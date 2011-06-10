@@ -17,7 +17,7 @@
 
 #define CONSTSTRLEN(m) (sizeof(m) - 1)
 
-char *address = "surgingurgency.com";
+char *address = "localhost";
 int port = 11301;
 
 char remote[16];
@@ -97,6 +97,7 @@ taskmain(int argc, char **argv)
 
   fd = netannounce(TCP, address, port);
   if (fd < 0) {
+    printf("aieeee!\n");
     taskexitall(1);
   }
   

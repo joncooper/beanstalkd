@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -ggdb -Ilibtask -Llibtask
-LDFLAGS=-lsasl2
+LDFLAGS=-lsasl2 -lpthread
 LDLIBS=libtask/libtask.a
 
 TARG=bauthd
@@ -28,8 +28,8 @@ HFILES=\
 .PHONY: all
 all: $(TARG)
 
-.c.o:
-	$(CC) $(LDFLAGS) $(CFLAGS) $< -c -o $@
+#.c.o:
+#	$(CC) $(LDFLAGS) $(CFLAGS) $< -c -o $@
 
 $(OFILES) $(MOFILE): $(HFILES)
 
@@ -38,9 +38,7 @@ $(TARG): $(OFILES) $(MOFILE)
 
 .PHONY: clean
 clean:
-	rm -f *.o $(TARG)
-
-
+	rm -f *.o $(TARG) ct/_* ct/*.o
 
 #$(TARG): $(OFILES) $(MOFILE)
 #	$(LINK.o) -o $@ $^ $(LDLIBS)

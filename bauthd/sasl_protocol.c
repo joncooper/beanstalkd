@@ -17,8 +17,11 @@ tTransition transitions[] = {
 #define TRANSITION_COUNT (sizeof(transitions) / sizeof(*transitions))
 
 #define MSG_AUTH_OK "AUTH_OK\r\n"
+#define MSG_AUTH_FAILURE "AUTH_FAILURE\r\n"
+#define MSG_AUTH_ERROR "AUTH_ERROR\r\n"
 #define MSG_AUTH_CONTINUE "AUTH_CONTINUE %i\r\n"
 #define MSG_AUTH_LIST_MECHANISMS "AUTH_MECHANISMS: %s\r\n"
+#define CONSTSTRLEN(m) (sizeof(m) - 1)
 
 char *service_name = "bauthd";
 
@@ -95,7 +98,7 @@ r = sasl_listmech(conn->sasl_conn,        // SASL context
   }
   
   dbgprintf("sasl_list_mechanisms: %s\n", result_string);
-  fprintf(conn->fd, MSG_AUTH_LIST_MECHANISMS, "dildofucker");
+  fprintf((FILE *)conn->fd, MSG_AUTH_LIST_MECHANISMS, result_string);
   
   // for whatever f*cked up reason, the string returned by sasl_listmech is not
   // NULL terminated.  ahem.
@@ -114,7 +117,7 @@ sasl_start(Connection conn)
   //   <auth data>\r\n
   char *loc, *mechanism, *bytes;
   int bytes_to_read, r;
-  
+ 
   loc = strchr(conn->command, ' ');
   if (loc == NULL) fsm_error(conn);
   
@@ -131,15 +134,25 @@ sasl_start(Connection conn)
   // read the rest of the data if need be
   
   bytes_to_read = (int)strtol(bytes, (char **)NULL, 10);
+
+  dbgprintf("bytes_to_read: %i\n", bytes_to_read);
+
   conn->data_in_len = bytes_to_read;
   conn_read(conn);
  
   // throw to sasl
   r = sasl_server_start(conn->sasl_conn, mechanism, conn->data_in, conn->data_in_len, &(conn->data_out), &(conn->data_out_len));
+
+  conn->data_in[conn->data_in_len] = '\0';
+  dbgprintf("data_in: %s\n", conn->data_in);
+
   if ((r != SASL_OK) && (r != SASL_CONTINUE)) {
+    dbgprintf("ST_SASL_FAIL\n");
+    # TODO: split error from invalid here
     return ST_SASL_FAIL;
   } else if (r == SASL_OK) {
-    fprintf(conn->fd, MSG_AUTH_OK);
+    dbgprintf("ST_SASL_OK\n");
+    fdwrite(conn->fd, MSG_AUTH_OK, CONSTSTRLEN(MSG_AUTH_OK));    
     return ST_SASL_OK;
   } else {
     // should be SASL_CONTINUE
@@ -148,7 +161,6 @@ sasl_start(Connection conn)
     return ST_SASL_CONTINUE;
   }
 }
-
 
 int
 sasl_step(Connection conn)
