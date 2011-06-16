@@ -15,6 +15,7 @@ make_server_socket(char *host, char *port)
     int fd = -1, flags, r;
     struct linger linger = {0, 0};
     struct addrinfo *airoot, *ai, hints;
+    struct sockaddr_un address;
 
     /* See if we got a listen fd from systemd. If so, all socket options etc
      * are already set, so we check that the fd is a TCP listen socket and
@@ -44,12 +45,21 @@ make_server_socket(char *host, char *port)
     }
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = PF_UNSPEC;
+    hints.ai_family = socket_path ? PF_UNIX : PF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
+    
+    // TODO: you don't want to use getaddrinfo() on a PF_UNIX socket, it is fakakta
+    
     r = getaddrinfo(host, port, &hints, &airoot);
     if (r == -1)
       return twarn("getaddrinfo()"), -1;
+
+    if (socket_path) {
+      memset(&address, 0, sizeof(struct sockaddr_un));
+      address.sun_family = AF_UNIX;
+      snprintf(address.sun_path, UNIX_PATH_MAX, socket_path);
+    }
 
     for(ai = airoot; ai; ai = ai->ai_next) {
       fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
@@ -65,6 +75,8 @@ make_server_socket(char *host, char *port)
         continue;
       }
 
+      // TODO: fiure out if these options & flags make sense on a PF_UNIX socket
+      //
       r = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
       if (r == -1) {
         twarn("setting O_NONBLOCK");

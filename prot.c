@@ -1818,6 +1818,9 @@ h_accept(const int fd, const short which, Srv *s)
     struct sockaddr_in6 addr;
 
     addrlen = sizeof addr;
+
+    // TODO: you want to recvmsg() from the parent fd here.
+
     cfd = accept(fd, (struct sockaddr *)&addr, &addrlen);
     if (cfd == -1) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) twarn("accept()");

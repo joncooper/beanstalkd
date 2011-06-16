@@ -12,6 +12,7 @@
 static char *user = NULL;
 static char *port = "11300";
 static char *host_addr;
+static char *socket_path = NULL;
 
 static void
 su(const char *user) {
@@ -69,6 +70,7 @@ usage(char *msg, char *arg)
             "            (will be rounded up to a multiple of 512 bytes)\n"
             " -c       compact the binlog (default)\n"
             " -n       do not compact the binlog\n"
+            " -A PATH  use SASL authentication via bauthd on socket at PATH\n"
             " -v       show version information\n"
             " -h       show this help\n",
             progname, JOB_DATA_SIZE_LIMIT_DEFAULT, Filesizedef);
@@ -111,6 +113,10 @@ opts(int argc, char **argv, Wal *w)
         if (argv[i][0] != '-') usage("unknown option", argv[i]);
         if (argv[i][1] == 0 || argv[i][2] != 0) usage("unknown option",argv[i]);
         switch (argv[i][1]) {
+            case 'A':
+                socket_path = require_arg("-A", argv[++i]);
+                // TODO: if we inherit a PF_UNIX socket from systemd, do we get a path?
+                break;
             case 'p':
                 port = require_arg("-p", argv[++i]);
                 warn_systemd_ignored_option("-p", argv[i]);
