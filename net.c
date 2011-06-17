@@ -12,10 +12,25 @@
 int
 make_server_socket(char *host, char *port)
 {
-    int fd = -1, flags, r;
-    struct linger linger = {0, 0};
-    struct addrinfo *airoot, *ai, hints;
-    struct sockaddr_un address;
+    int fd = -1;
+
+    fd = get_socket_from_systemd();
+    if (fd)
+       return fd;
+
+    if (socket_path) {
+        fd = make_local_server_socket();
+    } else {
+        fd = make_unspec_server_socket(host, port);
+    }
+
+    return fd;
+}
+
+int
+get_socket_from_systemd()
+{
+    int r, fd;
 
     /* See if we got a listen fd from systemd. If so, all socket options etc
      * are already set, so we check that the fd is a TCP listen socket and
@@ -31,6 +46,7 @@ make_server_socket(char *host, char *port)
             r = 1;
         }
         fd = SD_LISTEN_FDS_START;
+        // TODO: handle sd_is_socket_unix
         r = sd_is_socket_inet(fd, 0, SOCK_STREAM, 1, 0);
         if (r < 0) {
             errno = -r;
@@ -43,23 +59,68 @@ make_server_socket(char *host, char *port)
         }
         return fd;
     }
+}
+
+int
+make_local_server_socket()
+{
+    int fd = -1, r, flags;
+    struct sockaddr_un address;
+
+    fd = socket(PF_UNIX, SOCK_STREAM, 0);
+    if (fd == -1)
+        return twarn("socket()"), -1;
+
+    memset(&address, 0, sizeof(struct sockaddr_un));
+    address.sun_family = AF_UNIX;
+    snprintf(address.sun_path, UNIX_PATH_MAX, socket_path);
+
+    r = bind(fd, (struct sockaddr *) &(address), sizeof(address));
+    if (r == -1)
+        return twarn("bind()"), -1;
+
+    // See http://www.tin.org/bin/man.cgi?section=7&topic=AF_LOCAL
+    // for more info on socket options (or the lack thereof)
+
+    flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0) {
+        twarn("getting flags");
+        close(fd);
+        return -1;
+    }
+
+    r = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    if (r == -1) {
+        twarn("setting O_NONBLOCK");
+        close(fd);
+        return -1;
+    }
+
+    r = listen(fd, 1024);
+    if (r == -1) {
+        twarn("listen()");
+        close(fd);
+        return -1;
+    }
+
+    return fd;
+}
+
+int
+make_unspec_server_socket(char *host, char *port)
+{
+    int fd = -1, flags, r;
+    struct linger linger = {0, 0};
+    struct addrinfo *airoot, *ai, hints;
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = socket_path ? PF_UNIX : PF_UNSPEC;
+    hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-    
-    // TODO: you don't want to use getaddrinfo() on a PF_UNIX socket, it is fakakta
-    
+
     r = getaddrinfo(host, port, &hints, &airoot);
     if (r == -1)
       return twarn("getaddrinfo()"), -1;
-
-    if (socket_path) {
-      memset(&address, 0, sizeof(struct sockaddr_un));
-      address.sun_family = AF_UNIX;
-      snprintf(address.sun_path, UNIX_PATH_MAX, socket_path);
-    }
 
     for(ai = airoot; ai; ai = ai->ai_next) {
       fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
@@ -75,8 +136,6 @@ make_server_socket(char *host, char *port)
         continue;
       }
 
-      // TODO: fiure out if these options & flags make sense on a PF_UNIX socket
-      //
       r = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
       if (r == -1) {
         twarn("setting O_NONBLOCK");
