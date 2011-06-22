@@ -219,11 +219,16 @@ void warnx(const char *fmt, ...);
 char* fmtalloc(char *fmt, ...);
 void* zalloc(int n);
 #define new(T) zalloc(sizeof(T))
+long max_path(char *somefile);
 
-extern const chars *progname;
+extern const char *progname;
 
 int64 nanoseconds(void);
 int   falloc(int fd, int len);
+
+int get_socket_from_systemd();
+int make_local_server_socket(char *socketpath);
+int make_unspec_server_socket(char *host, char *port);
 
 
 void ms_init(ms a, ms_event_fn oninsert, ms_event_fn onremove);
@@ -318,8 +323,6 @@ void h_accept(const int fd, const short which, Srv* srv);
 void prot_remove_tube(tube t);
 void prot_replay(Srv *s, job list);
 
-
-int make_server_socket(char *host_addr, char *port);
 
 
 enum

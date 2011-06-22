@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include "dat.h"
 
 const char *progname;
@@ -80,4 +81,12 @@ zalloc(int n)
         memset(p, 0, n);
     }
     return p;
+}
+
+// Return the max path length, or -1 without errno if there is no
+// limit, or -1 with errno if there is a limit. Yes, this sucks.
+long
+max_path(char *somefile)
+{
+    return pathconf(somefile, _PC_PATH_MAX);
 }

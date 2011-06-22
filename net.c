@@ -3,29 +3,13 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <stdio.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include "dat.h"
 #include "sd-daemon.h"
-
-int
-make_server_socket(char *host, char *port)
-{
-    int fd = -1;
-
-    fd = get_socket_from_systemd();
-    if (fd)
-       return fd;
-
-    if (socket_path) {
-        fd = make_local_server_socket();
-    } else {
-        fd = make_unspec_server_socket(host, port);
-    }
-
-    return fd;
-}
 
 int
 get_socket_from_systemd()
@@ -59,10 +43,11 @@ get_socket_from_systemd()
         }
         return fd;
     }
+    return 0;
 }
 
 int
-make_local_server_socket()
+make_local_server_socket(char *socket_path)
 {
     int fd = -1, r, flags;
     struct sockaddr_un address;
@@ -73,7 +58,10 @@ make_local_server_socket()
 
     memset(&address, 0, sizeof(struct sockaddr_un));
     address.sun_family = AF_UNIX;
-    snprintf(address.sun_path, UNIX_PATH_MAX, socket_path);
+
+    // TODO: this won't let someone pass a format string as socket_path,
+    // but have I missed some other vulnerability? Bloody C strings!
+    snprintf(address.sun_path, sizeof(address.sun_path), "%s", socket_path);
 
     r = bind(fd, (struct sockaddr *) &(address), sizeof(address));
     if (r == -1)

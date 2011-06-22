@@ -49,6 +49,12 @@ set_sig_handlers()
     sa.sa_handler = enter_drain_mode;
     r = sigaction(SIGUSR1, &sa, 0);
     if (r == -1) twarn("sigaction(SIGUSR1)"), exit(111);
+
+    // TODO: figure out if we want to take responsibility for unlinking
+    // socket file if we are using one with SASL authentication. Since
+    // we would be unable to bind to it in the first place if the file
+    // already existed, it would seem that this can't be exploited for
+    // evil, but think it through... 
 }
 
 static void
@@ -162,6 +168,24 @@ opts(int argc, char **argv, Wal *w)
                 usage("unknown option", argv[i]);
         }
     }
+}
+
+int
+make_server_socket(char *host, char *port)
+{
+    int fd = -1;
+
+    fd = get_socket_from_systemd();
+    if (fd)
+       return fd;
+
+    if (socket_path) {
+        fd = make_local_server_socket(socket_path);
+    } else {
+        fd = make_unspec_server_socket(host, port);
+    }
+
+    return fd;
 }
 
 int
