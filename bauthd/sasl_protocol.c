@@ -148,7 +148,7 @@ sasl_start(Connection conn)
 
   if ((r != SASL_OK) && (r != SASL_CONTINUE)) {
     dbgprintf("ST_SASL_FAIL\n");
-    # TODO: split error from invalid here
+    // # TODO: split error from invalid here
     return ST_SASL_FAIL;
   } else if (r == SASL_OK) {
     dbgprintf("ST_SASL_OK\n");
