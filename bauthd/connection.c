@@ -28,6 +28,7 @@ Connection conn_init()
 void
   conn_close(Connection conn)
 {
+  close(conn->fd);
   free(conn->data_in);
   free(conn->data_out);
   sasl_conn_free(conn->sasl_conn);

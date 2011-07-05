@@ -108,6 +108,17 @@ make_local_client_socket(char *socket_path)
 	return fd;
 }
 
+void
+handoff_fd(int fd)
+{
+    int r, beanstalkd_sock;
+    beanstalkd_sock = make_local_client_socket(socket_path);
+    r = send_fd(beanstalkd_sock, fd);
+    if (r == -1) {
+        twarn("handoff_fd()");
+    }
+}
+
 #define TEST_CMD(s,c,o) if (strncmp((s), (c), CONSTSTRLEN(c)) == 0) return (o);
 static int
 which_event(char *line)
@@ -139,6 +150,12 @@ bauthdtask(void *v)
     
     event = which_event(conn->command);
     sasl_fsm_dispatch(conn, event);
+    if (conn->state == ST_SASL_OK) {
+        handoff_fd(conn->fd);
+        conn_close(conn);
+    } else if (conn->state == ST_SASL_FAIL) {
+        conn_close(conn);
+    }
   }
 }
 
