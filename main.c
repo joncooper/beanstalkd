@@ -121,6 +121,7 @@ opts(int argc, char **argv, Wal *w)
         switch (argv[i][1]) {
             case 'A':
                 socket_path = require_arg("-A", argv[++i]);
+                use_local_socket = 1;
                 // TODO: if we inherit a PF_UNIX socket from systemd, do we get a path?
                 break;
             case 'p':
@@ -179,7 +180,7 @@ make_server_socket(char *host, char *port)
     if (fd)
        return fd;
 
-    if (socket_path) {
+    if (use_local_socket) {
         fd = make_local_server_socket(socket_path);
     } else {
         fd = make_unspec_server_socket(host, port);

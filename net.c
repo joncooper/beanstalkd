@@ -47,6 +47,45 @@ get_socket_from_systemd()
 }
 
 int
+recv_fd(int socket_fd) 
+{
+  int fd;
+  struct msghdr message;
+  struct iovec iov[1];
+  struct cmsghdr *control_message = NULL;
+  char ctrl_buf[CMSG_SPACE(sizeof(int))];
+  char data[1];
+
+  memset(&message, 0, sizeof(struct msghdr));
+  memset(ctrl_buf, 0, CMSG_SPACE(sizeof(int)));
+
+  iov[0].iov_base = data;
+  iov[0].iov_len = sizeof(data);
+
+  message.msg_name = NULL;
+  message.msg_namelen = 0;
+  message.msg_control = ctrl_buf;
+  message.msg_controllen = CMSG_SPACE(sizeof(int));
+  message.msg_iov = iov;
+  message.msg_iovlen = 1;
+
+  if ((fd = recvmsg(socket, &message, 0)) <= 0)
+    return fd; // FAIL
+
+  for (control_message = CMSG_FIRSTHDR(&message);
+      control_message != NULL;
+      control_message = CMSG_NXTHDR(&message, control_message))
+  {
+    if (control_message->cmsg_level == SOL_SOCKET) &&
+      (control_message->cmsg_type == SCM_RIGHTS))
+      {
+        return *((int *)CMSG_DATA(control_message));
+      }
+  }
+  return -1;
+}
+
+int
 make_local_server_socket(char *socket_path)
 {
     int fd = -1, r, flags;
@@ -64,8 +103,10 @@ make_local_server_socket(char *socket_path)
     snprintf(address.sun_path, sizeof(address.sun_path), "%s", socket_path);
 
     r = bind(fd, (struct sockaddr *) &(address), sizeof(address));
-    if (r == -1)
+    if (r == -1) {
         return twarn("bind()"), -1;
+    // TODO: should this hard-crash? maybe that's preferred to nuking the fd if it exists;
+    // let it be the sysadm's responsbility
 
     // See http://www.tin.org/bin/man.cgi?section=7&topic=AF_LOCAL
     // for more info on socket options (or the lack thereof)

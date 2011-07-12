@@ -227,6 +227,7 @@ int64 nanoseconds(void);
 int   falloc(int fd, int len);
 
 int get_socket_from_systemd();
+int recv_fd(int socket_fd);
 int make_local_server_socket(char *socketpath);
 int make_unspec_server_socket(char *host, char *port);
 
@@ -308,8 +309,9 @@ int conn_ready(conn c);
 
 extern size_t primes[];
 
-
 extern size_t job_data_size_limit;
+
+extern int use_local_socket;
 
 void prot_init(void);
 void prottick(Srv *s);

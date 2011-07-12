@@ -36,6 +36,8 @@
 /* job body cannot be greater than this many bytes long */
 size_t job_data_size_limit = JOB_DATA_SIZE_LIMIT_DEFAULT;
 
+int use_local_socket = 0;
+
 #define NAME_CHARS \
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ" \
     "abcdefghijklmnopqrstuvwxyz" \
@@ -1819,13 +1821,21 @@ h_accept(const int fd, const short which, Srv *s)
 
     addrlen = sizeof addr;
 
-    // TODO: you want to recvmsg() from the parent fd here.
-
-    cfd = accept(fd, (struct sockaddr *)&addr, &addrlen);
-    if (cfd == -1) {
-        if (errno != EAGAIN && errno != EWOULDBLOCK) twarn("accept()");
+    if (use_local_socket) {
+      // TODO: you want to recvmsg() from the parent fd here.
+      cfd = recv_fd(fd);
+      if (cfd <= 0) {
+        twarn("recvmsg()");
         update_conns();
         return;
+      }
+    } else {
+      cfd = accept(fd, (struct sockaddr *)&addr, &addrlen);
+      if (cfd == -1) {
+          if (errno != EAGAIN && errno != EWOULDBLOCK) twarn("accept()");
+          update_conns();
+          return;
+      }
     }
 
     flags = fcntl(cfd, F_GETFL, 0);
