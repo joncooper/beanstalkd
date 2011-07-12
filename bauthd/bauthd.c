@@ -152,10 +152,11 @@ bauthdtask(void *v)
     sasl_fsm_dispatch(conn, event);
     if (conn->state == ST_SASL_OK) {
         handoff_fd(conn->fd);
-        conn_close(conn);
     } else if (conn->state == ST_SASL_FAIL) {
-        conn_close(conn);
+      handoff_fd(conn->fd);
     }
+    conn_close(conn);
+    taskexit(0);
   }
 }
 
