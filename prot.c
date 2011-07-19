@@ -1815,7 +1815,7 @@ void
 h_accept(const int fd, const short which, Srv *s)
 {
     conn c;
-    int cfd, flags, r;
+    int cfd, tmpfd, flags, r;
     socklen_t addrlen;
     struct sockaddr_in6 addr;
 
@@ -1828,12 +1828,14 @@ h_accept(const int fd, const short which, Srv *s)
         return;
     }
     if (use_local_socket) {
-      cfd = recv_fd(cfd);
-      if (cfd <= 0) {
+      tmpfd = recv_fd(cfd);
+      if (tmpfd <= 0) {
         twarn("recvmsg()");
         update_conns();
         return;
       }
+      close(cfd);
+      cfd = tmpfd;
     }
 
     flags = fcntl(cfd, F_GETFL, 0);
