@@ -1821,20 +1821,18 @@ h_accept(const int fd, const short which, Srv *s)
 
     addrlen = sizeof addr;
 
+    cfd = accept(fd, (struct sockaddr *)&addr, &addrlen);
+    if (cfd == -1) {
+        if (errno != EAGAIN && errno != EWOULDBLOCK) twarn("accept()");
+        update_conns();
+        return;
+    }
     if (use_local_socket) {
-      // TODO: you want to recvmsg() from the parent fd here.
-      cfd = recv_fd(fd);
+      cfd = recv_fd(cfd);
       if (cfd <= 0) {
         twarn("recvmsg()");
         update_conns();
         return;
-      }
-    } else {
-      cfd = accept(fd, (struct sockaddr *)&addr, &addrlen);
-      if (cfd == -1) {
-          if (errno != EAGAIN && errno != EWOULDBLOCK) twarn("accept()");
-          update_conns();
-          return;
       }
     }
 
