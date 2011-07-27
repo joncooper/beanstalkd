@@ -57,3 +57,12 @@ MSG_AUTH_CONTINUE - another authorization step is required
 MSG_UNKNOWN_COMMAND - server doesn't know what you're talking about and is probably a beanstalkd
 
 reply_msg seems to be not resetting input buffers correctly_
+
+
+
+
+ensure your config has the right dc set up
+http://www.danbishop.org/2011/05/01/ubuntu-11-04-sbs-small-business-server-setup-part-3-openldap/
+
+install apt-get libnss-ldapd libpam-ldapd
+
