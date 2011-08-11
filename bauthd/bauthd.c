@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <task.h>
+#include "libtask/task.h"
 #include <sasl/sasl.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -23,13 +23,69 @@
 
 #define CONSTSTRLEN(m) (sizeof(m) - 1)
 
-// TODO: do something smart with the bind address
-char *address = "localhost";
-int port = 11301;
+/* extern const char *progname;*/
+const char *progname = "bauthd";
+
+static char *address = "localhost";
+static int port = 11301;
 static char *socket_path = "/tmp/beanstalkd.sock";
 
-char remote[16];
-int rport;
+static void
+usage(char *msg, char *arg)
+{
+  if (arg) warnx("%s: %s", msg, arg);
+  fprintf(stderr, "Use: %s [OPTIONS]\n"
+      "\n"
+      "Options:\n"
+      " -A PATH  listen on socket bound to PATH"
+      " -p PORT  listen on port (default is 11301"
+      " -l ADDR  listen on address (default is localhost)\n"
+      " -h",
+      progname);
+  exit(arg ? 5 : 0);
+}
+
+static char *
+require_arg(char *opt, char *arg)
+{
+  if (!arg) usage("option requires an argument", opt);
+  return arg;
+}
+
+static int
+parse_port(char *str)
+{
+  int r, intvalue;
+  r = sscanf(str, "%i", &intvalue);
+  if (1 != r) usage("invalid port", str);
+  return intvalue;
+}
+
+
+static void
+opts(int argc, char **argv)
+{
+  int i;
+  for (i = 1; i < argc; ++i) {
+    if (argv[i][0] != '-') usage("unknown option", argv[i]);
+    if (argv[i][1] == 0 || argv[i][2] != 0) usage("unknown option", argv[i]);
+    switch (argv[i][1]) {
+      case 'A':
+        socket_path = require_arg("-A", argv[++i]);
+        break;
+      case 'p':
+        port = parse_port(require_arg("-p", argv[++i]));
+        break;
+      case 'l':
+        address = require_arg("-l", argv[++i]);
+        break;
+      case 'h':
+        usage(NULL, NULL);
+      default:
+        usage("unknown option", argv[i]);
+    }
+  }
+}
 
 // With thanks to "vpj" --
 // http://vpj.posterous.com/passing-file-descriptors-between-processes-us
@@ -80,9 +136,12 @@ make_local_client_socket(char *socket_path)
   memset(&address, 0, sizeof(struct sockaddr_un));
   address.sun_family = AF_UNIX;
 
-  // TODO: this won't let someone pass a format string as socket_path,
-  // but have I missed some other vulnerability? Bloody C strings!
-  snprintf(address.sun_path, sizeof(address.sun_path), "%s", socket_path);
+  if (sizeof(socket_path) <= sizeof(address.sun_path)) {
+    memmove(address.sun_path, socket_path, sizeof(socket_path));
+  } else {
+    twarn("bad socket path");
+    return -1;
+  }
 
 	r = connect(fd, (struct sockaddr *) &address, sizeof(address));
 	if (r == -1)
@@ -147,13 +206,14 @@ bauthdtask(void *v)
       taskexit(-1);
     }
     dbgprintf("command: %s\n", conn->command);
-    
+
     event = which_event(conn->command);
     sasl_fsm_dispatch(conn, event);
     if (conn->state == ST_SASL_OK) {
-        handoff_fd(conn->fd);
-    } else if (conn->state == ST_SASL_FAIL) {
+      dbgprintf("authentication succeeded\n");
       handoff_fd(conn->fd);
+    } else if (conn->state == ST_SASL_FAIL) {
+      dbgprintf("authentication failed.\n");
     }
     conn_close(conn);
     taskexit(0);
@@ -195,13 +255,14 @@ void
 taskmain(int argc, char **argv)
 {
   int cfd, fd;
+  char remote[16];
+  int rport;
 
   set_sig_handlers();
 
   fd = netannounce(TCP, address, port);
   if (fd < 0) {
-//TODO: tighten error message
-    printf("aieeee!\n");
+    fprintf(stderr, "Could not bind to %s:%i. Exiting.\n", address, port);
     taskexitall(1);
   }
   

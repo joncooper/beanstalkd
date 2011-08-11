@@ -1,6 +1,7 @@
 CC=gcc
-CFLAGS=-Wall -ggdb -Ilibtask -Llibtask
-# TODO: only need libpthread for debugging; how do I handle this?
+CFLAGS=-Wall -Ilibtask -Llibtask
+DEBUG=-ggdb -lpthread
+
 LDFLAGS=-lsasl2 # -lpthread # apparently statically linking with pthread causes segfaults?
 # see http://forums.fedoraforum.org/archive/index.php/t-83762.html
 LDLIBS=libtask/libtask.a

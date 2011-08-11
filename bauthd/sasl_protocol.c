@@ -64,8 +64,7 @@ sasl_conn_new()
 
   if (r == -1) {
     twarn("sasl_conn_new()");
-    // TODO: figure out what to do on fail; maybe just return NULL and check it upstream?
-    taskexit(-1);
+    taskexitall(-1);
   }
   
   return sasl_conn;
@@ -98,11 +97,8 @@ r = sasl_listmech(conn->sasl_conn,        // SASL context
   }
   
   dbgprintf("sasl_list_mechanisms: %s\n", result_string);
-  fprintf((FILE *)conn->fd, MSG_AUTH_LIST_MECHANISMS, result_string);
-  
-  // for whatever f*cked up reason, the string returned by sasl_listmech is not
-  // NULL terminated.  ahem.
-  
+
+  fdwrite(conn->fd, "AUTH_MECHANISMS: ", strlen("AUTH_MECHANISMS: "));
   fdwrite(conn->fd, result_string, string_length);
   
   return ST_SASL_READY;
@@ -148,7 +144,7 @@ sasl_start(Connection conn)
 
   if ((r != SASL_OK) && (r != SASL_CONTINUE)) {
     dbgprintf("ST_SASL_FAIL\n");
-    // # TODO: split error from invalid here
+    // if you are debugging, split error from fail here..
     return ST_SASL_FAIL;
   } else if (r == SASL_OK) {
     dbgprintf("ST_SASL_OK\n");

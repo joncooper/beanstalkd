@@ -58,11 +58,25 @@ MSG_UNKNOWN_COMMAND - server doesn't know what you're talking about and is proba
 
 reply_msg seems to be not resetting input buffers correctly_
 
-
-
-
 ensure your config has the right dc set up
 http://www.danbishop.org/2011/05/01/ubuntu-11-04-sbs-small-business-server-setup-part-3-openldap/
 
 install apt-get libnss-ldapd libpam-ldapd
 
+## Setting up LDAP (OW MY FACE THE BURNING)
+
+One reasonable resource: http://www.danbishop.org/2011/05/01/ubuntu-11-04-sbs-small-business-server-setup-part-3-openldap/
+
+- sudo apt-get install slapd ldap-utils
+- sudo dpkgconfig slapd
+- build and import ldif
+- sudo apt-get libnss-ldapd libpam-ldapd
+  - so that you can test by just ssh testuser@localhost
+- install ldap scripts
+- edit files
+- ldapadduser
+- ldapsetpasswd
+
+https://github.com/opscode/cookbooks/blob/master/postfix/recipes/sasl_auth.rb
+
+https://github.com/taliesins/ubuntu
