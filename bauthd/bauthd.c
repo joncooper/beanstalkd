@@ -136,7 +136,7 @@ make_local_client_socket(char *socket_path)
   memset(&address, 0, sizeof(struct sockaddr_un));
   address.sun_family = AF_UNIX;
 
-  if (sizeof(socket_path) <= sizeof(address.sun_path)) {
+  if (strlen(socket_path) <= sizeof(address.sun_path)) {
     memmove(address.sun_path, socket_path, sizeof(socket_path));
   } else {
     twarn("bad socket path");
