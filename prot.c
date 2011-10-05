@@ -192,6 +192,7 @@ size_t job_data_size_limit = JOB_DATA_SIZE_LIMIT_DEFAULT;
     "current-using: %u\n" \
     "current-watching: %u\n" \
     "current-waiting: %u\n" \
+    "cmd-delete: %" PRIu64 "\n" \
     "cmd-pause-tube: %u\n" \
     "pause: %" PRIu64 "\n" \
     "pause-time-left: %" PRIu64 "\n" \
@@ -604,6 +605,15 @@ remove_buried_job(job j)
         global_stat.buried_ct--;
         j->tube->stat.buried_ct--;
     }
+    return j;
+}
+
+static job
+remove_delayed_job(job j)
+{
+    if (!j || j->r.state != Delayed) return NULL;
+    heapremove(&j->tube->delay, j->heap_index);
+
     return j;
 }
 
@@ -1073,6 +1083,7 @@ fmt_stats_tube(char *buf, size_t size, tube t)
             t->using_ct,
             t->watching_ct,
             t->stat.waiting_ct,
+            t->stat.total_delete_ct,
             t->stat.pause_ct,
             t->pause / 1000000000,
             time_left);
@@ -1278,9 +1289,12 @@ dispatch_cmd(conn c)
         j = job_find(id);
         j = remove_reserved_job(c, j) ? :
             remove_ready_job(j) ? :
-            remove_buried_job(j);
+            remove_buried_job(j) ? :
+            remove_delayed_job(j);
 
         if (!j) return reply(c, MSG_NOTFOUND, MSG_NOTFOUND_LEN, STATE_SENDWORD);
+
+        j->tube->stat.total_delete_ct++;
 
         j->r.state = Invalid;
         r = walwrite(&c->srv->wal, j);
