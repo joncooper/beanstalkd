@@ -4,3 +4,6 @@ ct/_*
 beanstalkd
 beanstalkd-*.tar.gz
 NEWS.md
+.vagrant
+Vagrantfile
+deploy
