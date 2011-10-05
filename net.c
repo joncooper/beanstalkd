@@ -98,10 +98,8 @@ make_local_server_socket(char *socket_path)
     memset(&address, 0, sizeof(struct sockaddr_un));
     address.sun_family = AF_UNIX;
 
-    // TODO: this won't let someone pass a format string as socket_path,
-    // but have I missed some other vulnerability? Bloody C strings!
-    snprintf(address.sun_path, sizeof(address.sun_path), "%s", socket_path);
-
+    strncpy(address.sun_path, socket_path, sizeof(address.sun_path));
+    
     r = bind(fd, (struct sockaddr *) &(address), sizeof(address));
     if (r == -1)
         return twarn("bind()"), -1;
